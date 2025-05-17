@@ -301,4 +301,5 @@ if selected_category:
                 generated_letter = response.choices[0].message.content
                 st.text_area("Generated Letter", generated_letter, height=300)
             except Exception as e:
-                st.error(f"OpenAI error: {e}"
+                st.error(f"OpenAI error: {e}")
+
