@@ -1,4 +1,3 @@
-
 import streamlit as st
 import json
 from openai import OpenAI
@@ -34,7 +33,14 @@ if not gdpr_consent:
     st.warning("You must consent to GDPR processing to continue.")
     st.stop()
 
-# --- LETTER STRUCTURE (FULL VERSION) ---
+# --- TONE TOGGLE ---
+tone = st.radio(
+    "Select the tone for your letter:",
+    ("Standard", "Serious Formal Complaint"),
+    help="Choose 'Serious Formal Complaint' if you want regulatory language and strong escalation wording."
+)
+
+# --- LETTER STRUCTURE ---
 letter_structure = {
     "Care Complaint Letter": {
         "Neglect or injury": [
@@ -243,8 +249,8 @@ letter_structure = {
     }
 }
 
-# --- ADVANCED PROMPT LOGIC ---
-def generate_prompt(category, subcategory, answers, user_name):
+# --- ADVANCED TONE-AWARE PROMPT LOGIC ---
+def generate_prompt(category, subcategory, answers, user_name, tone):
     base_intro = (
         "You are an experienced care quality advocate who understands CQC regulations, safeguarding protocol, "
         "mental capacity considerations, and the rights of service users. Your task is to generate a formal letter "
@@ -258,15 +264,26 @@ def generate_prompt(category, subcategory, answers, user_name):
         if a.strip():
             summary_block += f"{q}\n{a.strip()}\n\n"
 
-    action_block = (
-        "Please write this letter in a calm, assertive, and emotionally intelligent tone. The letter should:\n"
-        "- Clearly explain the concern or incident\n"
-        "- Highlight any risk to the individual or others\n"
-        "- Request investigation, documentation, and appropriate escalation\n"
-        "- Mention any reports already made to safeguarding teams or regulators if noted\n"
-        "- Specify that a written response and named accountability are expected within a reasonable timeframe\n"
-        "- Close with a readiness to escalate if the matter is not taken seriously\n\n"
-    )
+    if tone == "Serious Formal Complaint":
+        action_block = (
+            "Please write this letter in a direct, formal, and legally aware tone. The letter should:\n"
+            "- Reference Regulation 13 or safeguarding principles where relevant\n"
+            "- Explicitly state concern for duty of care or CQC standards\n"
+            "- Request documentation (body maps, reports, policies) if applicable\n"
+            "- Demand a named point of accountability and timeline\n"
+            "- Note possible escalation to safeguarding boards, CQC, or ombudsman\n"
+            "- Include closing phrases such as 'will not hesitate to escalate' or 'formal complaint'\n\n"
+        )
+    else:
+        action_block = (
+            "Please write this letter in a calm, assertive, and emotionally intelligent tone. The letter should:\n"
+            "- Clearly explain the concern or incident\n"
+            "- Highlight any risk to the individual or others\n"
+            "- Request investigation, documentation, and appropriate escalation\n"
+            "- Mention any reports already made to safeguarding teams or regulators if noted\n"
+            "- Specify that a written response and named accountability are expected within a reasonable timeframe\n"
+            "- Close with a readiness to escalate if the matter is not taken seriously\n\n"
+        )
 
     closing = f"Please end the letter with:\nSincerely,\n{user_name}"
 
@@ -290,7 +307,7 @@ if selected_category:
         user_name = st.text_input("Your Name")
 
         if st.button("Generate Letter"):
-            full_prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name)
+            full_prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name, tone)
 
             try:
                 response = client.chat.completions.create(
@@ -302,4 +319,3 @@ if selected_category:
                 st.text_area("Generated Letter", generated_letter, height=300)
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
-
