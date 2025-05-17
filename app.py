@@ -1,3 +1,4 @@
+
 import streamlit as st
 import json
 from openai import OpenAI
@@ -242,6 +243,35 @@ letter_structure = {
     }
 }
 
+# --- ADVANCED PROMPT LOGIC ---
+def generate_prompt(category, subcategory, answers, user_name):
+    base_intro = (
+        "You are an experienced care quality advocate who understands CQC regulations, safeguarding protocol, "
+        "mental capacity considerations, and the rights of service users. Your task is to generate a formal letter "
+        "that addresses a care-related concern raised by a family member, advocate, or staff whistleblower.\n\n"
+    )
+
+    context_block = f"Letter Category: {category}\nIssue Type: {subcategory}\n\n"
+
+    summary_block = ""
+    for q, a in answers.items():
+        if a.strip():
+            summary_block += f"{q}\n{a.strip()}\n\n"
+
+    action_block = (
+        "Please write this letter in a calm, assertive, and emotionally intelligent tone. The letter should:\n"
+        "- Clearly explain the concern or incident\n"
+        "- Highlight any risk to the individual or others\n"
+        "- Request investigation, documentation, and appropriate escalation\n"
+        "- Mention any reports already made to safeguarding teams or regulators if noted\n"
+        "- Specify that a written response and named accountability are expected within a reasonable timeframe\n"
+        "- Close with a readiness to escalate if the matter is not taken seriously\n\n"
+    )
+
+    closing = f"Please end the letter with:\nSincerely,\n{user_name}"
+
+    return base_intro + context_block + summary_block + action_block + closing
+
 # --- FORM UI ---
 selected_category = st.selectbox("Choose your letter category:", list(letter_structure.keys()))
 
@@ -260,12 +290,7 @@ if selected_category:
         user_name = st.text_input("Your Name")
 
         if st.button("Generate Letter"):
-            full_prompt = f"You are a compassionate care advocate. Write a letter for this situation:\n\n"
-            full_prompt += f"Category: {selected_category}\n"
-            full_prompt += f"Issue: {selected_subcategory}\n\n"
-            for q, a in user_answers.items():
-                full_prompt += f"{q}\n{a}\n\n"
-            full_prompt += f"Signed: {user_name}"
+            full_prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name)
 
             try:
                 response = client.chat.completions.create(
@@ -276,4 +301,4 @@ if selected_category:
                 generated_letter = response.choices[0].message.content
                 st.text_area("Generated Letter", generated_letter, height=300)
             except Exception as e:
-                st.error(f"OpenAI error: {e}")
+                st.error(f"OpenAI error: {e}"
