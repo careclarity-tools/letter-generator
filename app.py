@@ -158,7 +158,7 @@ letter_structure = {
             "Would you like this shared with leadership?"
         ]
     },
-    # Additional letter categories as needed
+    # Add additional letter categories as needed
 }
 
 # --- TONE-BASED QUESTION DESIGN WITH EMPATHY ---
@@ -264,6 +264,7 @@ if selected_category:
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
 
+       
 
 
      
