@@ -1,14 +1,13 @@
 
+       
 
-import streamlit as st
+
+     
+    
+       
+        import streamlit as st
 import json
 from openai import OpenAI
-import streamlit as st
-
-
-
-# This will print the entire secrets object to help debug
-st.write(st.secrets)
 
 # --- LICENSE KEY SETUP ---
 VALID_KEYS_FILE = "valid_keys.json"
@@ -45,7 +44,7 @@ if not gdpr_consent:
 tone = st.radio(
     "Select the tone for your letter:",
     ("Standard", "Serious Formal Complaint"),
-    help="Choose 'Serious Formal Complaint' for a stronger escalation language."
+    help="Choose 'Serious Formal Complaint' if you want regulatory language and strong escalation wording."
 )
 
 # --- LETTER STRUCTURE ---
@@ -328,11 +327,4 @@ if selected_category:
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
 
-       
-
-
-     
-    
-       
-        
    
