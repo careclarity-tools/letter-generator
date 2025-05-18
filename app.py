@@ -264,6 +264,7 @@ if selected_category:
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
 
+
        
 
 
