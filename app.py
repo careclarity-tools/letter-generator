@@ -1,6 +1,5 @@
 
 
-
 import streamlit as st
 import json
 from openai import OpenAI
@@ -40,7 +39,7 @@ if not gdpr_consent:
 tone = st.radio(
     "Select the tone for your letter:",
     ("Standard", "Serious Formal Complaint"),
-    help="Choose 'Serious Formal Complaint' if you want regulatory language and strong escalation wording."
+    help="Choose 'Serious Formal Complaint' for a stronger escalation language."
 )
 
 # --- LETTER STRUCTURE ---
@@ -322,7 +321,6 @@ if selected_category:
                 st.text_area("Generated Letter", generated_letter, height=300)
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
-
 
        
 
