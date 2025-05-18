@@ -1,5 +1,5 @@
 
-import streamlit as st
+            import streamlit as st
 import json
 from openai import OpenAI
 
@@ -38,11 +38,10 @@ if not gdpr_consent:
 tone = st.radio(
     "Select the tone for your letter:",
     ("Standard", "Serious Formal Complaint"),
-    help="Choose 'Serious Formal Complaint' for regulatory and strong language."
+    help="Choose 'Serious Formal Complaint' if you want regulatory language and strong escalation wording."
 )
 
 # --- LETTER STRUCTURE ---
-
 letter_structure = {
     "Care Complaint Letter": {
         "Neglect or injury": [
@@ -185,39 +184,6 @@ letter_structure = {
             "What are you requesting now?"
         ]
     },
-    "Workplace Grievance Letter": {
-        "Harassment or bullying": [
-            "What happened?",
-            "Who was involved?",
-            "When and where?",
-            "What outcome do you want?",
-            "Have you spoken to a manager or HR?"
-        ],
-        "Unfair workload or pressure": [
-            "What is the issue?",
-            "What impact is it having?",
-            "Has this been discussed before?",
-            "What change are you asking for?"
-        ],
-        "Unsafe care conditions": [
-            "What unsafe conditions exist?",
-            "Have residents/staff been affected?",
-            "Have you raised concerns before?",
-            "What action are you asking for?"
-        ],
-        "Request for mediation": [
-            "What is the conflict?",
-            "Who is involved?",
-            "Have attempts been made to resolve it?",
-            "Would mediation help?"
-        ],
-        "Request to change shifts": [
-            "Why are you requesting a change?",
-            "What shifts work better for you?",
-            "Is this temporary or permanent?",
-            "Have you already spoken to your manager?"
-        ]
-    },
     "Other Letters": {
         "Safeguarding concern": [
             "What concern do you want to report?",
@@ -251,59 +217,50 @@ letter_structure = {
     }
 }
 
-
-# --- ENHANCEMENT LOGIC ---
-def detect_emotion(answers):
-    keywords = ["devastated", "angry", "ignored", "worried", "frightened", "shocked", "unsafe", "unheard"]
-    return [kw for kw in keywords if any(kw in a.lower() for a in answers.values())]
-
-def generate_preamble(tone, category, emotion_flags):
-    if tone == "Serious Formal Complaint":
-        return "I am writing to raise a serious and formal concern regarding the matter below."
-    elif "worried" in emotion_flags or "unsafe" in emotion_flags:
-        return "I am reaching out with growing concern about the following issue."
-    elif "angry" in emotion_flags:
-        return "This letter reflects our strong frustration and need for accountability regarding recent events."
-    else:
-        return f"I would like to bring forward a {category.lower()} matter that requires your attention."
-
-def wrap_answers(answers):
-    formatted = ""
-    for q, a in answers.items():
-        if a.strip():
-            formatted += f"{q}\nThe user shared: \"{a.strip()}\"\n\n"
-    return formatted
-
-# --- PROMPT GENERATOR ---
+# --- ADVANCED TONE-AWARE PROMPT LOGIC ---
 def generate_prompt(category, subcategory, answers, user_name, tone):
-    emotion_flags = detect_emotion(answers)
-    preamble = generate_preamble(tone, category, emotion_flags)
-    summary_block = wrap_answers(answers)
-
     base_intro = (
         "You are an experienced care quality advocate who understands CQC regulations, safeguarding protocol, "
-        "mental capacity law, and service user rights. Your task is to write a formal letter addressing the concern.\n\n"
+        "mental capacity considerations, and the rights of service users. Your task is to generate a formal letter "
+        "that addresses a care-related concern raised by a family member, advocate, or staff whistleblower.\n\n"
     )
 
     context_block = f"Letter Category: {category}\nIssue Type: {subcategory}\n\n"
+
+    summary_block = ""
+    for q, a in answers.items():
+        if a.strip():
+            summary_block += f"{q}\n{a.strip()}\n\n"
+
+    # Adjust temperature based on tone
+    temperature = 0.3 if tone == "Serious Formal Complaint" else 0.7
+
+    # Adjust action block to ensure empathy
     if tone == "Serious Formal Complaint":
         action_block = (
-            "The letter must:\n"
-            "- Use formal, direct language and regulatory terms\n"
-            "- Reference Regulation 13 or safeguarding law where relevant\n"
-            "- Demand documentation, escalation, and a timeline for response\n"
-            "- Close with phrases like 'formal complaint' or 'will not hesitate to escalate'\n\n"
+            "Please write this letter in a direct, formal, and legally aware tone. The letter should:\n"
+            "- Be factual and to the point, avoiding unnecessary elaboration.\n"
+            "- Still reflect concern for the well-being of the individual or team involved, "
+            "without sounding dismissive or cold.\n"
+            "- Explicitly state concern for duty of care or CQC standards.\n"
+            "- Use language that is respectful yet assertive, with clear expectations for response.\n"
+            "- Reference relevant regulations or safeguarding principles where appropriate.\n"
+            "- Mention escalation options such as safeguarding boards or CQC, but in a professional manner.\n\n"
         )
     else:
         action_block = (
-            "The letter should be calm, assertive, and emotionally intelligent. It must:\n"
-            "- Clearly explain the issue and any risks\n"
-            "- Ask for follow-up and written response from a named person\n"
-            "- Suggest willingness to escalate only if ignored\n\n"
+            "Please write this letter in a calm, assertive, and emotionally intelligent tone. The letter should:\n"
+            "- Clearly explain the concern or incident\n"
+            "- Highlight any risk to the individual or others\n"
+            "- Request investigation, documentation, and appropriate escalation\n"
+            "- Mention any reports already made to safeguarding teams or regulators if noted\n"
+            "- Specify that a written response and named accountability are expected within a reasonable timeframe\n"
+            "- Close with a readiness to escalate if the matter is not taken seriously\n\n"
         )
 
     closing = f"Please end the letter with:\nSincerely,\n{user_name}"
-    return f"{base_intro}{preamble}\n\n{context_block}{summary_block}{action_block}{closing}"
+
+    return base_intro + context_block + summary_block + action_block + closing
 
 # --- FORM UI ---
 selected_category = st.selectbox("Choose your letter category:", list(letter_structure.keys()))
@@ -323,18 +280,21 @@ if selected_category:
         user_name = st.text_input("Your Name")
 
         if st.button("Generate Letter"):
-            prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name, tone)
+            full_prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name, tone)
+
             try:
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7
+                    messages=[{"role": "user", "content": full_prompt}],
+                    temperature=temperature
                 )
-                letter = response.choices[0].message.content
-                st.text_area("Generated Letter", letter, height=350)
+                generated_letter = response.choices[0].message.content
+                st.text_area("Generated Letter", generated_letter, height=300)
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
 
+
+ 
 
      
  
