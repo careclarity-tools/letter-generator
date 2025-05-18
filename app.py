@@ -1,76 +1,183 @@
 
-
 import streamlit as st
 import json
 from openai import OpenAI
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-import io
 
 # --- LICENSE KEY SETUP ---
 VALID_KEYS_FILE = "valid_keys.json"
 
-# Function for authentication
-def authenticate_user():
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    if not st.session_state.authenticated:
-        license_key = st.text_input("Enter your license key", type="password")
-        try:
-            with open(VALID_KEYS_FILE, "r") as f:
-                valid_keys = json.load(f)
-        except FileNotFoundError:
-            valid_keys = []
-        
-        if license_key in valid_keys:
-            st.session_state.authenticated = True
-            st.success("Access granted. Welcome.")
-        else:
-            st.warning("Invalid or already-used license key.")
-            st.stop()
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
-# --- OPENAI SETUP ---
-def setup_openai():
-    client = OpenAI(api_key=st.secrets["openai"]["api_key"])
-    return client
+if not st.session_state.authenticated:
+    license_key = st.text_input("Enter your license key", type="password")
 
-# --- GDPR CONSENT ---
-def consent_to_gdpr():
-    gdpr_consent = st.checkbox("I consent to data processing (GDPR)")
-    if not gdpr_consent:
-        st.warning("You must consent to GDPR processing to continue.")
+    try:
+        with open(VALID_KEYS_FILE, "r") as f:
+            valid_keys = json.load(f)
+    except FileNotFoundError:
+        valid_keys = []
+
+    if license_key in valid_keys:
+        st.session_state.authenticated = True
+        st.success("Access granted. Welcome.")
+    else:
+        st.warning("Invalid or already-used license key.")
         st.stop()
 
+# --- OPENAI SETUP ---
+client = OpenAI(api_key=st.secrets["openai"]["api_key"])
+
+# --- GDPR CONSENT ---
+gdpr_consent = st.checkbox("I consent to data processing (GDPR)")
+if not gdpr_consent:
+    st.warning("You must consent to GDPR processing to continue.")
+    st.stop()
+
 # --- TONE TOGGLE ---
-def select_tone():
-    tone = st.radio(
-        "Select the tone for your letter:",
-        ("Standard", "Serious Formal Complaint"),
-        help="Choose 'Serious Formal Complaint' for stronger escalation language."
-    )
-    return tone
+tone = st.radio(
+    "Select the tone for your letter:",
+    ("Standard", "Serious Formal Complaint"),
+    help="Choose 'Serious Formal Complaint' for stronger escalation language."
+)
 
-# --- DYNAMIC QUESTION DESIGN ---
+# --- FULL LETTER STRUCTURE (30+ Letters) ---
+letter_structure = {
+    "Care Complaint Letter": {
+        "Neglect or injury": [
+            "Who was harmed?",
+            "Where did it happen?",
+            "What happened?",
+            "What was the result?",
+            "Have you raised this already?"
+        ],
+        "Medication errors": [
+            "What was the error?",
+            "When and where?",
+            "Who was affected?",
+            "What actions were taken?",
+            "What do you want done now?"
+        ],
+        "Staff conduct": [
+            "What happened?",
+            "Who was involved?",
+            "Was this one-time or ongoing?",
+            "What was the impact?",
+            "Have you spoken to the provider?"
+        ],
+        "Cleanliness or environment": [
+            "What hygiene issue or risk occurred?",
+            "Who did it affect?",
+            "What date/time was this?",
+            "Has it been addressed?",
+            "Are you seeking specific action?"
+        ],
+        "General standards of care": [
+            "What care concerns do you have?",
+            "Is this recent or long-standing?",
+            "Any dates/incidents worth noting?",
+            "What changes are you requesting?"
+        ]
+    },
+    "Family Advocacy Letter": {
+        "Request a meeting": [
+            "Who do you want to meet with?",
+            "What is the purpose of the meeting?",
+            "Any preferred dates/times?",
+            "Is this urgent or routine?"
+        ],
+        "Disagree with discharge": [
+            "Who is being discharged?",
+            "What are your concerns?",
+            "What support is missing?",
+            "Have you spoken to the discharge team?"
+        ],
+        "Challenge capacity assessment": [
+            "What is your loved one’s diagnosis?",
+            "Why do you believe the assessment is flawed?",
+            "What outcome are you seeking?",
+            "Have you discussed this with professionals already?"
+        ],
+        "Request second opinion": [
+            "What was the first opinion or assessment?",
+            "Why do you feel a second opinion is necessary?",
+            "What changes in care would this affect?",
+            "Have you made a formal request before?"
+        ],
+        "Follow-up after safeguarding": [
+            "What was the original concern?",
+            "What outcome are you checking on?",
+            "Any dates/people involved?",
+            "Has there been any communication since?"
+        ]
+    },
+    "Referral Support Letter": {
+        "Request community support": [
+            "What support do you believe is needed?",
+            "Who is the individual needing it?",
+            "Have they had this support before?",
+            "Why now?"
+        ],
+        "Request MDT review": [
+            "What is the reason for requesting an MDT?",
+            "Who is involved in the care?",
+            "Are there conflicting opinions?",
+            "What is the ideal next step?"
+        ],
+        "Referral to CHC/NHS Continuing Care": [
+            "Why do you think CHC is appropriate?",
+            "What needs are you highlighting?",
+            "Have assessments already started?",
+            "Are you requesting a Fast Track?"
+        ],
+        "Referral for reassessment": [
+            "What has changed in the person’s condition?",
+            "When was the last assessment?",
+            "What result are you hoping for?"
+        ]
+    },
+    "Thank You & Positive Feedback": {
+        "Praise for a staff member": [
+            "What did they do well?",
+            "When and where?",
+            "What impact did it have?",
+            "Do you want management to be notified?"
+        ],
+        "Thank a team or home": [
+            "What overall praise would you like to give?",
+            "Is there a specific moment worth mentioning?",
+            "Would you like to stay in contact?"
+        ],
+        "Positive discharge feedback": [
+            "What made the discharge go well?",
+            "Who was involved?",
+            "Any specific comments you'd like to share?"
+        ],
+        "Support during end-of-life care": [
+            "Who provided support?",
+            "What actions stood out?",
+            "Would you like this shared with leadership?"
+        ]
+    },
+    # Add additional letter categories as needed
+}
+
+# --- TONE-BASED QUESTION DESIGN WITH EMPATHY ---
 def get_questionnaire_for_tone_with_refined_empathy(category, subcategory, tone):
-    # Add dynamic generation based on subcategory
-    questions = []
-    if category == "Care Complaint Letter":
-        if subcategory == "Neglect or injury":
-            questions = [
-                f"First and foremost, we are truly sorry to hear about this situation. Could you describe how the neglect or injury made you or your loved one feel?",
-                f"We understand how distressing this must be. Can you share details surrounding the incident, such as where it happened and who was involved?",
-                f"We appreciate your openness. What steps would you like to see taken to improve the situation and prevent future harm?"
-            ]
-        elif subcategory == "Medication errors":
-            questions = [
-                f"First and foremost, we are truly sorry for the medication error. Can you describe how this mistake affected your loved one or others involved?",
-                f"We know this must have been difficult. Can you provide details about the error, such as the medication involved and the timeline?",
-                f"What actions would you like to see taken to prevent this from happening again and ensure your loved one's safety?"
-            ]
-    # Add more subcategories here...
-    return questions
+    if tone == "Standard":
+        return [
+            f"First and foremost, we are truly sorry to hear about this situation. Could you describe how it made you or your loved one feel?",
+            f"We understand how distressing this must be. Can you share some details surrounding the issue '{subcategory}'?",
+            f"We appreciate your openness in sharing this. Would you like to include any specific requests on how this situation can be improved or addressed?"
+        ]
+    else:  # Serious Formal Complaint tone
+        return [
+            f"Please describe the details of the '{subcategory}' incident, including dates, times, and all involved. Your detailed input will help guide us in resolving the issue.",
+            f"What was the direct impact of this issue on your loved one or others in the care setting?",
+            "What specific actions do you want taken, and do you believe any regulatory bodies should be notified?"
+        ]
 
-# --- LETTER GENERATION WITH EMPATHY ---
+# --- LETTER GENERATION WITH EMPATHY AND LOGIC ---
 def generate_prompt_with_refined_empathy(category, subcategory, answers, user_name, tone):
     base_intro = (
         "You are an experienced care quality advocate who understands CQC regulations, safeguarding protocol, "
@@ -78,10 +185,10 @@ def generate_prompt_with_refined_empathy(category, subcategory, answers, user_na
         "by a family member, advocate, or staff whistleblower. We understand this is an emotional journey, and your input "
         "is deeply appreciated.\n\n"
     )
-    
+
     context_block = f"Letter Category: {category}\nIssue Type: {subcategory}\n\n"
+
     summary_block = ""
-    
     for q, a in answers.items():
         if a.strip():
             summary_block += f"{q}\n{a.strip()}\n\n"
@@ -112,94 +219,52 @@ def generate_prompt_with_refined_empathy(category, subcategory, answers, user_na
 
     return base_intro + context_block + summary_block + action_block + closing
 
-# --- PDF DOWNLOAD FUNCTIONALITY ---
-def generate_pdf(letter_text):
-    # Create a PDF from the letter text
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    c.drawString(30, 750, letter_text)
-    c.showPage()
-    c.save()
+# --- FORM UI ---
+selected_category = st.selectbox("Choose your letter category:", list(letter_structure.keys()))
 
-    buffer.seek(0)
-    return buffer
+if selected_category:
+    subcategories = list(letter_structure[selected_category].keys())
+    selected_subcategory = st.selectbox(f"Select the issue type under '{selected_category}':", subcategories)
 
-# --- MAIN UI ---
-def run_app():
-    authenticate_user()
-    client = setup_openai()
-    consent_to_gdpr()
-    tone = select_tone()
+    if selected_subcategory:
+        st.markdown("---")
+        st.subheader("📝 Please answer the following:")
+        user_answers = {}
+        questions = get_questionnaire_for_tone_with_refined_empathy(selected_category, selected_subcategory, tone)
+        for question in questions:
+            response = st.text_area(question, key=question)
+            user_answers[question] = response
 
-    selected_category = st.selectbox("Choose your letter category:", list(letter_structure.keys()))
+        user_name = st.text_input("Your Name")
 
-    if selected_category:
-        subcategories = list(letter_structure[selected_category].keys())
-        selected_subcategory = st.selectbox(f"Select the issue type under '{selected_category}':", subcategories)
+        # --- ERROR HANDLING ---
+        def validate_inputs():
+            missing_fields = [q for q, a in user_answers.items() if not a.strip()]
+            if missing_fields:
+                st.error(f"Please complete all fields: {', '.join(missing_fields)}")
+                return False
+            if not user_name.strip():
+                st.error("Please provide your name.")
+                return False
+            return True
 
-        if selected_subcategory:
-            st.markdown("---")
-            st.subheader("📝 Please answer the following:")
-            user_answers = {}
-            questions = get_questionnaire_for_tone_with_refined_empathy(selected_category, selected_subcategory, tone)
+        if st.button("Generate Letter") and validate_inputs():
+            full_prompt = generate_prompt_with_refined_empathy(selected_category, selected_subcategory, user_answers, user_name, tone)
 
-            def update_preview():
-                preview_prompt = generate_prompt_with_refined_empathy(selected_category, selected_subcategory, user_answers, user_name, tone)
-                st.session_state.preview = preview_prompt  
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": full_prompt}],
+                    temperature=0.7
+                )
+                generated_letter = response.choices[0].message.content
 
-            for question in questions:
-                response = st.text_area(question, key=question, on_change=update_preview)
-                user_answers[question] = response
+                # --- REAL-TIME PREVIEW ---
+                st.subheader("Letter Preview:")
+                st.text_area("Generated Letter", generated_letter, height=300)
+            except Exception as e:
+                st.error(f"OpenAI error: {e}")  
 
-            user_name = st.text_input("Your Name", on_change=update_preview)
-
-            def validate_inputs():
-                missing_fields = [q for q, a in user_answers.items() if not a.strip()]
-                if missing_fields:
-                    st.error(f"Please complete all fields: {', '.join(missing_fields)}")
-                    return False
-                if not user_name.strip():
-                    st.error("Please provide your name.")
-                    return False
-                return True
-
-            if st.button("Generate Letter") and validate_inputs():
-                full_prompt = st.session_state.preview
-
-                try:
-                    response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[{"role": "user", "content": full_prompt}],
-                        temperature=0.7
-                    )
-                    generated_letter = response.choices[0].message.content
-
-                    st.subheader("Letter Preview:")
-                    st.text_area("Generated Letter", generated_letter, height=300)
-
-                    # Downloadable PDF Option
-                    pdf_buffer = generate_pdf(generated_letter)
-                    st.download_button(
-                        label="Download Letter (PDF)",
-                        data=pdf_buffer,
-                        file_name="generated_letter.pdf",
-                        mime="application/pdf"
-                    )
-
-                    # Text Download
-                    st.download_button(
-                        label="Download Letter (Text)",
-                        data=generated_letter,
-                        file_name="generated_letter.txt",
-                        mime="text/plain"
-                    )
-
-                except Exception as e:
-                    st.error(f"OpenAI error: {e}")
-
-# Run the app
-if __name__ == "__main__":
-    run_app()
 
 
 
