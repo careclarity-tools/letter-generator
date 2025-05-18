@@ -3,6 +3,12 @@
 import streamlit as st
 import json
 from openai import OpenAI
+import streamlit as st
+
+
+
+# This will print the entire secrets object to help debug
+st.write(st.secrets)
 
 # --- LICENSE KEY SETUP ---
 VALID_KEYS_FILE = "valid_keys.json"
