@@ -158,7 +158,7 @@ letter_structure = {
             "Would you like this shared with leadership?"
         ]
     },
-    # Add additional letter categories as needed
+    # Additional letter categories can be added here
 }
 
 # --- TONE-BASED QUESTION DESIGN WITH EMPATHY ---
@@ -230,11 +230,18 @@ if selected_category:
         st.subheader("📝 Please answer the following:")
         user_answers = {}
         questions = get_questionnaire_for_tone_with_refined_empathy(selected_category, selected_subcategory, tone)
+
+        # Real-time input for better user experience
+        def update_preview():
+            # Rebuild the prompt with updated answers
+            preview_prompt = generate_prompt_with_refined_empathy(selected_category, selected_subcategory, user_answers, user_name, tone)
+            st.session_state.preview = preview_prompt  # Update preview in session state
+
         for question in questions:
-            response = st.text_area(question, key=question)
+            response = st.text_area(question, key=question, on_change=update_preview)
             user_answers[question] = response
 
-        user_name = st.text_input("Your Name")
+        user_name = st.text_input("Your Name", on_change=update_preview)
 
         # --- ERROR HANDLING ---
         def validate_inputs():
@@ -248,7 +255,7 @@ if selected_category:
             return True
 
         if st.button("Generate Letter") and validate_inputs():
-            full_prompt = generate_prompt_with_refined_empathy(selected_category, selected_subcategory, user_answers, user_name, tone)
+            full_prompt = st.session_state.preview  # Use the live preview text
 
             try:
                 response = client.chat.completions.create(
@@ -261,8 +268,18 @@ if selected_category:
                 # --- REAL-TIME PREVIEW ---
                 st.subheader("Letter Preview:")
                 st.text_area("Generated Letter", generated_letter, height=300)
+
+                # --- Download Feature ---
+                st.download_button(
+                    label="Download Letter",
+                    data=generated_letter,
+                    file_name="generated_letter.txt",
+                    mime="text/plain"
+                )
+
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
+
 
 
        
