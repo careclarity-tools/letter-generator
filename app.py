@@ -1,5 +1,4 @@
-
-            import streamlit as st
+import streamlit as st
 import json
 from openai import OpenAI
 
@@ -292,6 +291,10 @@ if selected_category:
                 st.text_area("Generated Letter", generated_letter, height=300)
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
+
+
+
+
 
 
  
