@@ -1,5 +1,5 @@
-import streamlit as st
 
+import streamlit as st
 import json
 from openai import OpenAI
 
@@ -186,47 +186,36 @@ letter_structure = {
         ]
     },
     "Workplace Grievance Letter": {
-        "Threatening or inappropriate language by management": [
-            "Who made the comment?",
-            "What exactly was said?",
-            "How did this affect you or others?",
-            "Was this addressed with anyone?",
-            "Are you seeking an apology, formal review, or other outcome?"
+        "Harassment or bullying": [
+            "What happened?",
+            "Who was involved?",
+            "When and where?",
+            "What outcome do you want?",
+            "Have you spoken to a manager or HR?"
         ],
-        "Unfair or inconsistent application of policy": [
-            "What policy or rule was inconsistently applied?",
-            "Who was affected, and how?",
-            "Were you treated differently than others?",
-            "Have you raised this before?"
+        "Unfair workload or pressure": [
+            "What is the issue?",
+            "What impact is it having?",
+            "Has this been discussed before?",
+            "What change are you asking for?"
         ],
-        "Blocked from development or training opportunities": [
-            "What opportunity were you blocked from?",
-            "Were you qualified or eligible for it?",
-            "Do you know who was chosen instead?",
-            "What explanation (if any) were you given?"
+        "Unsafe care conditions": [
+            "What unsafe conditions exist?",
+            "Have residents/staff been affected?",
+            "Have you raised concerns before?",
+            "What action are you asking for?"
         ],
-        "Concerns ignored or dismissed": [
-            "What concern did you raise?",
-            "How was it received?",
-            "Was it recorded or followed up?",
-            "Has this happened before?"
+        "Request for mediation": [
+            "What is the conflict?",
+            "Who is involved?",
+            "Have attempts been made to resolve it?",
+            "Would mediation help?"
         ],
-        "Work-related stress or decline in mental health": [
-            "What aspects of work have affected your mental health?",
-            "Have you taken time off because of this?",
-            "Was your condition previously stable?",
-            "Have you told anyone at work?"
-        ],
-        "Favouritism or unfair team dynamics": [
-            "What patterns or treatment are you noticing?",
-            "Who appears to benefit unfairly?",
-            "Has this affected your trust or morale?",
-            "Have you been excluded or overlooked?"
-        ],
-        "Poor communication or lack of transparency": [
-            "What information was not shared or miscommunicated?",
-            "How did this affect you or the team?",
-            "Was this raised with a supervisor or HR?"
+        "Request to change shifts": [
+            "Why are you requesting a change?",
+            "What shifts work better for you?",
+            "Is this temporary or permanent?",
+            "Have you already spoken to your manager?"
         ]
     },
     "Other Letters": {
@@ -292,7 +281,7 @@ def generate_prompt(category, subcategory, answers, user_name, tone):
     summary_block = wrap_answers(answers)
 
     base_intro = (
-        "You are an experienced care quality advocate who understands that the person writing this may have already tried to resolve the matter informally, but now feels it must be recorded in writing for acknowledgment or further support. who understands CQC regulations, safeguarding protocol, "
+        "You are an experienced care quality advocate who understands CQC regulations, safeguarding protocol, "
         "mental capacity law, and service user rights. Your task is to write a formal letter addressing the concern.\n\n"
     )
 
