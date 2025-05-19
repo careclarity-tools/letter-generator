@@ -10,7 +10,6 @@ if "authenticated" not in st.session_state:
 
 if not st.session_state.authenticated:
     license_key = st.text_input("Enter your license key", type="password")
-
     try:
         with open(VALID_KEYS_FILE, "r") as f:
             valid_keys = json.load(f)
@@ -40,7 +39,7 @@ tone = st.radio(
     help="Choose 'Serious Formal Complaint' for regulatory and strong language."
 )
 
-# --- LETTER STRUCTURE (grievance removed) ---
+# --- LETTER STRUCTURE ---
 letter_structure = {
     "Care Complaint Letter": {
         "Neglect or injury": [
@@ -76,6 +75,18 @@ letter_structure = {
             "Is this recent or long-standing?",
             "Any dates/incidents worth noting?",
             "What changes are you requesting?"
+        ],
+        "Dementia or capacity concerns": [
+            "What is the concern related to dementia or mental capacity?",
+            "Was best interest decision-making followed?",
+            "Have professionals considered family input?",
+            "What would you like reviewed or clarified?"
+        ],
+        "Food, hydration or weight loss": [
+            "Who is affected and how?",
+            "Have there been signs of dehydration or weight loss?",
+            "Was this reported or recorded?",
+            "What response or support was given?"
         ]
     },
     "Family Advocacy Letter": {
@@ -108,6 +119,12 @@ letter_structure = {
             "What outcome are you checking on?",
             "Any dates/people involved?",
             "Has there been any communication since?"
+        ],
+        "Ask who is responsible for care": [
+            "What is unclear about roles or responsibilities?",
+            "Have you received conflicting information?",
+            "Who have you contacted so far?",
+            "What would help clarify the situation?"
         ]
     },
     "Referral Support Letter": {
@@ -133,6 +150,12 @@ letter_structure = {
             "What has changed in the person’s condition?",
             "When was the last assessment?",
             "What result are you hoping for?"
+        ],
+        "Request OT or physio": [
+            "What mobility or rehabilitation need exists?",
+            "Has this person received support before?",
+            "What outcome would help their recovery?",
+            "Is equipment or adaptation needed?"
         ]
     },
     "Thank You & Positive Feedback": {
@@ -271,18 +294,16 @@ def generate_prompt(category, subcategory, answers, user_name, tone):
 
 # --- FORM UI ---
 selected_category = st.selectbox("Choose your letter category:", list(letter_structure.keys()))
-
 if selected_category:
     subcategories = list(letter_structure[selected_category].keys())
     selected_subcategory = st.selectbox(f"Select the issue type under '{selected_category}':", subcategories)
-
     if selected_subcategory:
-        st.markdown("---")
-        st.subheader("📝 Please answer the following:")
+        st.markdown("### 📝 Your Details & Concerns")
         user_answers = {}
-        for question in letter_structure[selected_category][selected_subcategory]:
-            response = st.text_area(question, key=question)
-            user_answers[question] = response
+        with st.expander("Click to complete letter details", expanded=True):
+            for question in letter_structure[selected_category][selected_subcategory]:
+                response = st.text_area(question, key=question)
+                user_answers[question] = response
 
         user_name = st.text_input("Your Name")
 
@@ -298,3 +319,4 @@ if selected_category:
                 st.text_area("Generated Letter", letter, height=350)
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
+
