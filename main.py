@@ -1,9 +1,5 @@
-
-
-
 import streamlit as st
 import json
-import os
 from openai import OpenAI
 
 # --- LICENSE KEY SETUP ---
@@ -14,7 +10,6 @@ if "authenticated" not in st.session_state:
 
 if not st.session_state.authenticated:
     license_key = st.text_input("Enter your license key", type="password")
-
     try:
         with open(VALID_KEYS_FILE, "r") as f:
             valid_keys = json.load(f)
@@ -28,9 +23,8 @@ if not st.session_state.authenticated:
         st.warning("Invalid or already-used license key.")
         st.stop()
 
-# --- OPENAI SETUP (with hardened fallback) ---
-api_key = st.secrets.get("openai", {}).get("api_key", os.getenv("OPENAI_API_KEY"))
-client = OpenAI(api_key=api_key)
+# --- OPENAI SETUP ---
+client = OpenAI(api_key=st.secrets["openai"]["api_key"])
 
 # --- GDPR Consent ---
 gdpr_consent = st.checkbox("I consent to data processing (GDPR)")
@@ -42,10 +36,10 @@ if not gdpr_consent:
 tone = st.radio(
     "Select the tone for your letter:",
     ("Standard", "Serious Formal Complaint"),
-    help="Choose 'Serious Formal Complaint' if you want regulatory language and strong escalation wording."
+    help="Choose 'Serious Formal Complaint' for regulatory and strong language."
 )
 
-# --- LETTER STRUCTURE (trimmed for this demo build) ---
+# --- LETTER STRUCTURE ---
 letter_structure = {
     "Care Complaint Letter": {
         "Neglect or injury": [
@@ -54,75 +48,140 @@ letter_structure = {
             "What happened?",
             "What was the result?",
             "Have you raised this already?"
+        ],
+        "Medication errors": [
+            "What was the error?",
+            "When and where?",
+            "Who was affected?",
+            "What actions were taken?",
+            "What do you want done now?"
         ]
     },
-    "Thank You & Positive Feedback": {
-        "Praise for a staff member": [
-            "What did they do well?",
-            "When and where?",
-            "What impact did it have?",
-            "Do you want management to be notified?"
+"Workplace Grievance Letter": {
+        "Threatening or inappropriate language by management": [
+            "What was said or implied that made you feel uncomfortable or threatened?",
+            "Who said it, and in what setting?",
+            "How did this affect you or others around you?",
+            "Was anything done to address it at the time?",
+            "What outcome would help restore fairness or accountability?"
+        ],
+        "Unfair or inconsistent application of policy": [
+            "What policy or rule was involved?",
+            "How was it applied unfairly or inconsistently?",
+            "Were you treated differently from others — and if so, how?",
+            "Has this issue been raised before, and what was the response?"
+        ],
+        "Blocked from development or training opportunities": [
+            "What was the opportunity you hoped to be part of?",
+            "Were you told (directly or indirectly) that you were qualified?",
+            "Were others selected instead — and if so, how did that decision feel to you?",
+            "Was any reason given, or were you left unsure?"
+        ],
+        "Concerns ignored or dismissed": [
+            "What issue did you raise, and why was it important to you?",
+            "Who did you bring it up with?",
+            "How was it responded to — if at all?",
+            "Have similar concerns gone unanswered before?"
+        ],
+        "Work-related stress or decline in mental health": [
+            "What situations or pressures have taken a toll on your mental health?",
+            "Were you managing well before, and has that changed?",
+            "Have you needed to take time off or seek support because of this?",
+            "Have you felt safe sharing this with anyone at work?"
+        ],
+        "Favouritism or unfair team dynamics": [
+            "What behaviours or patterns have made things feel unbalanced or unfair?",
+            "Who seems to be favoured — and how does that show up?",
+            "Has this affected your motivation, confidence, or trust in the team?",
+            "Have you felt left out, sidelined, or treated differently?"
+        ],
+        "Poor communication or lack of transparency": [
+            "What communication was missing or unclear?",
+            "How did this affect your ability to do your job — or feel respected in it?",
+            "Did you try to get clarity, and what happened when you asked?"
         ]
     }
 }
 
-# --- PROMPT LOGIC ---
+# --- ENHANCEMENT LOGIC ---
+def detect_emotion(answers):
+    keywords = ["devastated", "angry", "ignored", "worried", "frightened", "shocked", "unsafe", "unheard"]
+    return [kw for kw in keywords if any(kw in a.lower() for a in answers.values())]
+
+def generate_preamble(tone, category, emotion_flags):
+    if tone == "Serious Formal Complaint":
+        return "I am writing to raise a serious and formal concern regarding the matter below."
+    elif "worried" in emotion_flags or "unsafe" in emotion_flags:
+        return "I am reaching out with growing concern about the following issue."
+    elif "angry" in emotion_flags:
+        return "This letter reflects our strong frustration and need for accountability regarding recent events."
+    else:
+        return f"I would like to bring forward a {category.lower()} matter that requires your attention."
+
+def wrap_answers(answers):
+    formatted = ""
+    for q, a in answers.items():
+        if a.strip():
+            formatted += f"{q}\nThe user shared: \"{a.strip()}\"\n\n"
+    return formatted
+
+# --- PROMPT GENERATOR ---
 def generate_prompt(category, subcategory, answers, user_name, tone):
+    emotion_flags = detect_emotion(answers)
+    preamble = generate_preamble(tone, category, emotion_flags)
+    summary_block = wrap_answers(answers)
+
     base_intro = (
-        "You are an experienced care quality advocate who understands CQC regulations, safeguarding protocol, "
-        "mental capacity considerations, and the rights of service users. Your task is to generate a formal letter "
-        "that addresses a care-related concern raised by a family member, advocate, or staff whistleblower.\n\n"
+        "You are an experienced care quality advocate who understands that the person writing this may have already tried to resolve the matter informally, but now feels it must be recorded in writing for acknowledgment or further support. "
+        "You understand CQC regulations, safeguarding protocol, mental capacity law, and service user rights. Your task is to write a formal letter addressing the concern.\n\n"
     )
 
     context_block = f"Letter Category: {category}\nIssue Type: {subcategory}\n\n"
-
-    summary_block = ""
-    for q, a in answers.items():
-        if a.strip():
-            summary_block += f"{q}\n{a.strip()}\n\n"
-
-    temperature = 0.3 if tone == "Serious Formal Complaint" else 0.7
-
     if tone == "Serious Formal Complaint":
         action_block = (
-            "Please write this letter in a direct, formal, and legally aware tone. The letter should:\n"
-            "- Be factual and to the point, avoiding unnecessary elaboration.\n"
-            "- Still reflect concern for the well-being of the individual or team involved.\n"
-            "- Explicitly state concern for duty of care or CQC standards.\n"
-            "- Use language that is respectful yet assertive.\n"
-            "- Mention escalation options if necessary.\n\n"
+            "The letter must:\n"
+            "- Use formal, direct language and regulatory terms\n"
+            "- Reference Regulation 13 or safeguarding law where relevant\n"
+            "- Demand documentation, escalation, and a timeline for response\n"
+            "- Close with phrases like 'formal complaint' or 'will not hesitate to escalate'\n\n"
         )
     else:
         action_block = (
-            "Please write this letter in a calm, emotionally intelligent tone. The letter should:\n"
-            "- Clearly explain the concern\n"
-            "- Highlight risk or impact\n"
-            "- Request investigation and response\n\n"
+            "The letter should be calm, assertive, and emotionally intelligent. It must:\n"
+            "- Clearly explain the issue and any risks\n"
+            "- Ask for follow-up and written response from a named person\n"
+            "- Suggest willingness to escalate only if ignored\n\n"
         )
 
     closing = f"Please end the letter with:\nSincerely,\n{user_name}"
-    return base_intro + context_block + summary_block + action_block + closing
+    return f"{base_intro}{preamble}\n\n{context_block}{summary_block}{action_block}{closing}"
 
-# --- UI ---
+# --- FORM UI ---
 selected_category = st.selectbox("Choose your letter category:", list(letter_structure.keys()))
+
 if selected_category:
     subcategories = list(letter_structure[selected_category].keys())
     selected_subcategory = st.selectbox(f"Select the issue type under '{selected_category}':", subcategories)
+
     if selected_subcategory:
         st.markdown("---")
         st.subheader("📝 Please answer the following:")
-        user_answers = {q: st.text_area(q) for q in letter_structure[selected_category][selected_subcategory]}
+        user_answers = {}
+        for question in letter_structure[selected_category][selected_subcategory]:
+            response = st.text_area(question, key=question)
+            user_answers[question] = response
+
         user_name = st.text_input("Your Name")
+
         if st.button("Generate Letter"):
             prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name, tone)
             try:
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": prompt}],
-                    temperature=temperature
+                    temperature=0.7
                 )
-                st.text_area("Generated Letter", response.choices[0].message.content, height=300)
+                letter = response.choices[0].message.content
+                st.text_area("Generated Letter", letter, height=350)
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
-
-
