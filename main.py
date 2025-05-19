@@ -1,3 +1,6 @@
+
+
+
 import streamlit as st
 import json
 import os
@@ -25,8 +28,8 @@ if not st.session_state.authenticated:
         st.warning("Invalid or already-used license key.")
         st.stop()
 
-# --- OPENAI SETUP (with fallback) ---
-api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
+# --- OPENAI SETUP (with hardened fallback) ---
+api_key = st.secrets.get("openai", {}).get("api_key", os.getenv("OPENAI_API_KEY"))
 client = OpenAI(api_key=api_key)
 
 # --- GDPR Consent ---
@@ -42,7 +45,7 @@ tone = st.radio(
     help="Choose 'Serious Formal Complaint' if you want regulatory language and strong escalation wording."
 )
 
-# --- LETTER STRUCTURE ---
+# --- LETTER STRUCTURE (trimmed for this demo build) ---
 letter_structure = {
     "Care Complaint Letter": {
         "Neglect or injury": [
@@ -51,33 +54,6 @@ letter_structure = {
             "What happened?",
             "What was the result?",
             "Have you raised this already?"
-        ],
-        "Medication errors": [
-            "What was the error?",
-            "When and where?",
-            "Who was affected?",
-            "What actions were taken?",
-            "What do you want done now?"
-        ],
-        "Staff conduct": [
-            "What happened?",
-            "Who was involved?",
-            "Was this one-time or ongoing?",
-            "What was the impact?",
-            "Have you spoken to the provider?"
-        ],
-        "Cleanliness or environment": [
-            "What hygiene issue or risk occurred?",
-            "Who did it affect?",
-            "What date/time was this?",
-            "Has it been addressed?",
-            "Are you seeking specific action?"
-        ],
-        "General standards of care": [
-            "What care concerns do you have?",
-            "Is this recent or long-standing?",
-            "Any dates/incidents worth noting?",
-            "What changes are you requesting?"
         ]
     },
     "Thank You & Positive Feedback": {
@@ -86,21 +62,6 @@ letter_structure = {
             "When and where?",
             "What impact did it have?",
             "Do you want management to be notified?"
-        ],
-        "Thank a team or home": [
-            "What overall praise would you like to give?",
-            "Is there a specific moment worth mentioning?",
-            "Would you like to stay in contact?"
-        ],
-        "Positive discharge feedback": [
-            "What made the discharge go well?",
-            "Who was involved?",
-            "Any specific comments you'd like to share?"
-        ],
-        "Support during end-of-life care": [
-            "Who provided support?",
-            "What actions stood out?",
-            "Would you like this shared with leadership?"
         ]
     }
 }
@@ -126,21 +87,17 @@ def generate_prompt(category, subcategory, answers, user_name, tone):
         action_block = (
             "Please write this letter in a direct, formal, and legally aware tone. The letter should:\n"
             "- Be factual and to the point, avoiding unnecessary elaboration.\n"
-            "- Still reflect concern for the well-being of the individual or team involved, without sounding dismissive or cold.\n"
+            "- Still reflect concern for the well-being of the individual or team involved.\n"
             "- Explicitly state concern for duty of care or CQC standards.\n"
-            "- Use language that is respectful yet assertive, with clear expectations for response.\n"
-            "- Reference relevant regulations or safeguarding principles where appropriate.\n"
-            "- Mention escalation options such as safeguarding boards or CQC, but in a professional manner.\n\n"
+            "- Use language that is respectful yet assertive.\n"
+            "- Mention escalation options if necessary.\n\n"
         )
     else:
         action_block = (
-            "Please write this letter in a calm, assertive, and emotionally intelligent tone. The letter should:\n"
-            "- Clearly explain the concern or incident\n"
-            "- Highlight any risk to the individual or others\n"
-            "- Request investigation, documentation, and appropriate escalation\n"
-            "- Mention any reports already made to safeguarding teams or regulators if noted\n"
-            "- Specify that a written response and named accountability are expected within a reasonable timeframe\n"
-            "- Close with a readiness to escalate if the matter is not taken seriously\n\n"
+            "Please write this letter in a calm, emotionally intelligent tone. The letter should:\n"
+            "- Clearly explain the concern\n"
+            "- Highlight risk or impact\n"
+            "- Request investigation and response\n\n"
         )
 
     closing = f"Please end the letter with:\nSincerely,\n{user_name}"
@@ -167,7 +124,5 @@ if selected_category:
                 st.text_area("Generated Letter", response.choices[0].message.content, height=300)
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
-
-
 
 
