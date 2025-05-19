@@ -1,45 +1,3 @@
-import streamlit as st
-import json
-from openai import OpenAI
-
-# --- LICENSE KEY SETUP ---
-VALID_KEYS_FILE = "valid_keys.json"
-
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if not st.session_state.authenticated:
-    license_key = st.text_input("Enter your license key", type="password")
-    try:
-        with open(VALID_KEYS_FILE, "r") as f:
-            valid_keys = json.load(f)
-    except FileNotFoundError:
-        valid_keys = []
-
-    if license_key in valid_keys:
-        st.session_state.authenticated = True
-        st.success("Access granted. Welcome.")
-    else:
-        st.warning("Invalid or already-used license key.")
-        st.stop()
-
-# --- OPENAI SETUP ---
-client = OpenAI(api_key=st.secrets["openai"]["api_key"])
-
-# --- GDPR Consent ---
-gdpr_consent = st.checkbox("I consent to data processing (GDPR)")
-if not gdpr_consent:
-    st.warning("You must consent to GDPR processing to continue.")
-    st.stop()
-
-# --- TONE TOGGLE ---
-tone = st.radio(
-    "Select the tone for your letter:",
-    ("Standard", "Serious Formal Complaint"),
-    help="Choose 'Serious Formal Complaint' for regulatory and strong language."
-)
-
-# --- LETTER STRUCTURE ---
 letter_structure = {
     "Care Complaint Letter": {
         "Neglect or injury": [
@@ -51,137 +9,180 @@ letter_structure = {
         ],
         "Medication errors": [
             "What was the error?",
-            "When and where?",
+            "When and where did it happen?",
             "Who was affected?",
             "What actions were taken?",
             "What do you want done now?"
+        ],
+        "Inadequate hygiene or infection control": [
+            "What specific hygiene or cleanliness concern are you raising?",
+            "Where and when was this noticed?",
+            "Has anyone been affected or placed at risk?",
+            "Was this raised with staff or management?",
+            "What outcome do you expect?"
+        ],
+        "Poor staffing levels or delays in care": [
+            "What delays or gaps in care have occurred?",
+            "What was the impact on the person receiving care?",
+            "Was this a one-off or repeated issue?",
+            "Was this caused by staff shortages or something else?",
+            "Have you tried raising this before?"
+        ],
+        "Unsafe discharge from hospital": [
+            "Who was discharged?",
+            "What were your concerns about the discharge?",
+            "Were services or support in place?",
+            "What risks were created by the discharge?",
+            "What follow-up are you requesting?"
+        ],
+        "Breach of safeguarding protocol": [
+            "What safeguarding concern are you reporting?",
+            "Who was involved or at risk?",
+            "What actions were (or weren’t) taken?",
+            "Have you informed the local authority or CQC?",
+            "Do you want a formal investigation?"
+        ],
+        "Poor handling of dementia or capacity issues": [
+            "What behaviour or situation caused concern?",
+            "Was the person's mental capacity considered?",
+            "Were choices made in their best interests?",
+            "Did staff communicate appropriately?",
+            "What would you like reviewed or changed?"
+        ],
+        "Physical restraint or restrictive practice": [
+            "What happened?",
+            "Who was restrained or restricted?",
+            "Was this done safely, and was consent considered?",
+            "Has this happened before?",
+            "Do you want external oversight?"
+        ],
+        "Malnutrition or dehydration": [
+            "What signs of poor nutrition or hydration have you noticed?",
+            "Was this raised with staff?",
+            "What was their explanation or response?",
+            "What impact has this had?",
+            "Do you want a dietary review or monitoring in place?"
         ]
     },
-"Workplace Grievance Letter": {
-        "Threatening or inappropriate language by management": [
-            "What was said or implied that made you feel uncomfortable or threatened?",
-            "Who said it, and in what setting?",
-            "How did this affect you or others around you?",
-            "Was anything done to address it at the time?",
-            "What outcome would help restore fairness or accountability?"
+
+    "Referral & Discharge Letters": {
+        "Request for care needs assessment": [
+            "Who is the person needing assessment?",
+            "What are the key care needs or concerns?",
+            "Is there an urgent reason for this request?",
+            "Have you contacted social services before?",
+            "What support are you hoping to access?"
         ],
-        "Unfair or inconsistent application of policy": [
-            "What policy or rule was involved?",
-            "How was it applied unfairly or inconsistently?",
-            "Were you treated differently from others — and if so, how?",
-            "Has this issue been raised before, and what was the response?"
+        "Hospital discharge planning concerns": [
+            "Who is being discharged?",
+            "What care or support is being arranged?",
+            "What concerns do you have about timing or readiness?",
+            "Has the discharge coordinator been helpful?",
+            "What would be a safer or more supported plan?"
         ],
-        "Blocked from development or training opportunities": [
-            "What was the opportunity you hoped to be part of?",
-            "Were you told (directly or indirectly) that you were qualified?",
-            "Were others selected instead — and if so, how did that decision feel to you?",
-            "Was any reason given, or were you left unsure?"
+        "Community nursing or OT referral": [
+            "What need or condition requires follow-up?",
+            "Has the person received this support before?",
+            "Was this discussed during recent care or discharge?",
+            "Do you have concerns about mobility, wounds, or equipment?",
+            "What do you want arranged?"
         ],
-        "Concerns ignored or dismissed": [
-            "What issue did you raise, and why was it important to you?",
-            "Who did you bring it up with?",
-            "How was it responded to — if at all?",
-            "Have similar concerns gone unanswered before?"
+        "Request for Continuing Healthcare (CHC)": [
+            "Who is the request for?",
+            "What are their complex health needs?",
+            "Have you applied before or had a checklist done?",
+            "Are they currently in hospital, care home, or home?",
+            "Do you want help with assessment, review, or appeal?"
         ],
-        "Work-related stress or decline in mental health": [
-            "What situations or pressures have taken a toll on your mental health?",
-            "Were you managing well before, and has that changed?",
-            "Have you needed to take time off or seek support because of this?",
-            "Have you felt safe sharing this with anyone at work?"
+        "Social worker involvement request": [
+            "What situation needs oversight or action?",
+            "Is there a risk to the person or others?",
+            "Has a social worker been involved previously?",
+            "What barriers are preventing safe care or planning?",
+            "What would you like the social worker to do?"
         ],
-        "Favouritism or unfair team dynamics": [
-            "What behaviours or patterns have made things feel unbalanced or unfair?",
-            "Who seems to be favoured — and how does that show up?",
-            "Has this affected your motivation, confidence, or trust in the team?",
-            "Have you felt left out, sidelined, or treated differently?"
+        "Palliative or end-of-life referral": [
+            "Who is the person, and what is their condition?",
+            "What care or support is missing?",
+            "Are pain, comfort, or dignity being managed well?",
+            "What service (hospice, palliative nurse, etc) is needed?",
+            "Is time-sensitive action required?"
+        ]
+    },
+
+    "Family Escalation & Support": {
+        "Escalation to CQC or Ombudsman": [
+            "What has happened or failed to be resolved?",
+            "What steps have you taken already?",
+            "Who did you contact and when?",
+            "What evidence or records do you have?",
+            "What do you want the regulator to do?"
         ],
-        "Poor communication or lack of transparency": [
-            "What communication was missing or unclear?",
-            "How did this affect your ability to do your job — or feel respected in it?",
-            "Did you try to get clarity, and what happened when you asked?"
+        "Request for MDT or case review": [
+            "Who is the person needing coordinated support?",
+            "What professionals are already involved?",
+            "What’s not working or needs clearer planning?",
+            "Has a case meeting been offered before?",
+            "What outcome are you requesting?"
+        ],
+        "Formal complaint follow-up": [
+            "What was your original complaint?",
+            "Who did you send it to and when?",
+            "What response (if any) did you receive?",
+            "Has the issue improved, worsened, or stayed the same?",
+            "What are you asking for now?"
+        ],
+        "Request for named care coordinator": [
+            "Who is receiving care and in what setting?",
+            "What confusion or communication problems are occurring?",
+            "Have you had to chase or repeat things?",
+            "Has a coordinator ever been offered before?",
+            "What difference would a named lead make?"
+        ],
+        "Clarification of care responsibilities": [
+            "What specific situation or decision is unclear?",
+            "Who are the agencies or services involved?",
+            "Have you received mixed messages or been left unsupported?",
+            "What risks or confusion is this causing?",
+            "What written explanation or plan do you want?"
+        ],
+        "Appeal against care decision or funding cut": [
+            "What was the decision or funding change?",
+            "How did you find out?",
+            "What impact is this having?",
+            "Have you asked for this to be reviewed already?",
+            "What are you requesting instead?"
+        ]
+    },
+
+    "Thank You & Positive Feedback": {
+        "Praise for a staff member": [
+            "Who would you like to thank?",
+            "What did they do well?",
+            "When and where did this take place?",
+            "How did it make a difference?",
+            "Would you like management to be notified?"
+        ],
+        "Thanks to a care team or provider": [
+            "Which care team or service are you praising?",
+            "What overall support or approach impressed you?",
+            "Was this ongoing or a specific event?",
+            "Did they go above expectations in any way?",
+            "Would you like this included in their records?"
+        ],
+        "Post-discharge appreciation": [
+            "Who was discharged and from where?",
+            "What support helped them during the transition?",
+            "Did anyone go the extra mile?",
+            "Has their recovery or care continued well?",
+            "Would you like to encourage service recognition?"
+        ],
+        "End-of-life or palliative thanks": [
+            "Who received palliative or end-of-life care?",
+            "Which professionals or carers were most involved?",
+            "How did they show compassion or dignity?",
+            "Was family supported through the process?",
+            "What message would you like to pass on?"
         ]
     }
 }
-
-# --- ENHANCEMENT LOGIC ---
-def detect_emotion(answers):
-    keywords = ["devastated", "angry", "ignored", "worried", "frightened", "shocked", "unsafe", "unheard"]
-    return [kw for kw in keywords if any(kw in a.lower() for a in answers.values())]
-
-def generate_preamble(tone, category, emotion_flags):
-    if tone == "Serious Formal Complaint":
-        return "I am writing to raise a serious and formal concern regarding the matter below."
-    elif "worried" in emotion_flags or "unsafe" in emotion_flags:
-        return "I am reaching out with growing concern about the following issue."
-    elif "angry" in emotion_flags:
-        return "This letter reflects our strong frustration and need for accountability regarding recent events."
-    else:
-        return f"I would like to bring forward a {category.lower()} matter that requires your attention."
-
-def wrap_answers(answers):
-    formatted = ""
-    for q, a in answers.items():
-        if a.strip():
-            formatted += f"{q}\nThe user shared: \"{a.strip()}\"\n\n"
-    return formatted
-
-# --- PROMPT GENERATOR ---
-def generate_prompt(category, subcategory, answers, user_name, tone):
-    emotion_flags = detect_emotion(answers)
-    preamble = generate_preamble(tone, category, emotion_flags)
-    summary_block = wrap_answers(answers)
-
-    base_intro = (
-        "You are an experienced care quality advocate who understands that the person writing this may have already tried to resolve the matter informally, but now feels it must be recorded in writing for acknowledgment or further support. "
-        "You understand CQC regulations, safeguarding protocol, mental capacity law, and service user rights. Your task is to write a formal letter addressing the concern.\n\n"
-    )
-
-    context_block = f"Letter Category: {category}\nIssue Type: {subcategory}\n\n"
-    if tone == "Serious Formal Complaint":
-        action_block = (
-            "The letter must:\n"
-            "- Use formal, direct language and regulatory terms\n"
-            "- Reference Regulation 13 or safeguarding law where relevant\n"
-            "- Demand documentation, escalation, and a timeline for response\n"
-            "- Close with phrases like 'formal complaint' or 'will not hesitate to escalate'\n\n"
-        )
-    else:
-        action_block = (
-            "The letter should be calm, assertive, and emotionally intelligent. It must:\n"
-            "- Clearly explain the issue and any risks\n"
-            "- Ask for follow-up and written response from a named person\n"
-            "- Suggest willingness to escalate only if ignored\n\n"
-        )
-
-    closing = f"Please end the letter with:\nSincerely,\n{user_name}"
-    return f"{base_intro}{preamble}\n\n{context_block}{summary_block}{action_block}{closing}"
-
-# --- FORM UI ---
-selected_category = st.selectbox("Choose your letter category:", list(letter_structure.keys()))
-
-if selected_category:
-    subcategories = list(letter_structure[selected_category].keys())
-    selected_subcategory = st.selectbox(f"Select the issue type under '{selected_category}':", subcategories)
-
-    if selected_subcategory:
-        st.markdown("---")
-        st.subheader("📝 Please answer the following:")
-        user_answers = {}
-        for question in letter_structure[selected_category][selected_subcategory]:
-            response = st.text_area(question, key=question)
-            user_answers[question] = response
-
-        user_name = st.text_input("Your Name")
-
-        if st.button("Generate Letter"):
-            prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name, tone)
-            try:
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7
-                )
-                letter = response.choices[0].message.content
-                st.text_area("Generated Letter", letter, height=350)
-            except Exception as e:
-                st.error(f"OpenAI error: {e}")
