@@ -1,20 +1,24 @@
-# Care Clarity Generator (Full Version)
+# Care Clarity Letter Generator
 
-Includes:
-- All 30+ letter types and categories
-- Reusable license key access
-- GDPR checkbox
-- OpenAI API integration
+## Setup Instructions
 
-## Deploy on Streamlit Cloud
+1. Ensure Python 3.9+ is installed.
+2. Create a virtual environment (optional but recommended).
+3. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+4. Set your OpenAI API key securely in `.streamlit/secrets.toml`:
+   ```
+   [openai]
+   api_key = "your_openai_key"
+   ```
+5. Launch the app:
+   ```
+   streamlit run main.py
+   ```
 
-1. Push this to GitHub
-2. Add to https://streamlit.io/cloud
-3. Under Secrets, paste:
+## Notes
+- GDPR consent and license key validation are required for access.
+- Letter packs include complaints, advocacy, discharge issues, and escalation support.
 
-```toml
-[openai]
-api_key = "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-```
-
-Use test key: demo-1234-5678-ABCD
