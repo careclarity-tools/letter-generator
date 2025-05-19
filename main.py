@@ -1,4 +1,10 @@
-import streamlit as st
+
+
+
+
+
+
+ import streamlit as st
 import json
 from openai import OpenAI
 
@@ -213,6 +219,66 @@ letter_structure = {
             "Is this ongoing or resolved?",
             "Do you want a callback or acknowledgment?"
         ]
+    },
+    "Escalation & Regulatory": {
+        "Notify safeguarding board": [
+            "What incident or risk are you reporting?",
+            "Who is affected?",
+            "Have you reported it to the care provider?",
+            "Why are you escalating it externally now?"
+        ],
+        "Raise formal concern with CQC": [
+            "What concern do you want CQC to investigate?",
+            "Where is the setting and who is affected?",
+            "Is this a single incident or ongoing pattern?",
+            "Have you tried resolving this locally first?"
+        ],
+        "Escalate to Integrated Care Board (ICB)": [
+            "What issue are you escalating?",
+            "What support or funding is being denied?",
+            "Have you followed the correct steps so far?",
+            "Why is ICB intervention needed now?"
+        ]
+    },
+    "Advocate Support Requests": {
+        "Seek mental capacity advocate (IMCA)": [
+            "What decision is being made?",
+            "Does the person lack capacity for it?",
+            "Are they unbefriended (no close family/friends)?",
+            "What outcome are you hoping for?"
+        ],
+        "Request independent advocate (IMHA)": [
+            "What mental health issue is involved?",
+            "Is the person detained or sectioned?",
+            "What kind of support is needed from advocacy?",
+            "Have they had an advocate before?"
+        ],
+        "Challenge under Human Rights Act": [
+            "What decision or treatment is breaching rights?",
+            "Whose rights are affected?",
+            "Which right (Article 8, 5, etc.) is relevant?",
+            "What action are you requesting?"
+        ]
+    },
+    "Delays & Practical Barriers": {
+        "Chase delayed referral or appointment": [
+            "Who is waiting for what (referral/test/support)?",
+            "How long has the delay been?",
+            "What impact is the delay having?",
+            "Have you contacted the provider already?"
+        ],
+        "Dispute funding refusal (LA/NHS)": [
+            "What funding was denied?",
+            "What is the person’s current care situation?",
+            "Why do you believe the refusal is unfair?",
+            "Have you received a written explanation?"
+        ],
+        "Request carer support plan": [
+            "Are you a family carer?",
+            "What support are you struggling to provide?",
+            "Has a carer’s assessment ever been done?",
+            "What help would make a difference?"
+        ]
     }
 }
 
@@ -231,10 +297,8 @@ def generate_prompt(category, subcategory, answers, user_name, tone):
         if a.strip():
             summary_block += f"{q}\n{a.strip()}\n\n"
 
-    # Adjust temperature based on tone
     temperature = 0.3 if tone == "Serious Formal Complaint" else 0.7
 
-    # Adjust action block to ensure empathy
     if tone == "Serious Formal Complaint":
         action_block = (
             "Please write this letter in a direct, formal, and legally aware tone. The letter should:\n"
@@ -285,19 +349,13 @@ if selected_category:
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[{"role": "user", "content": full_prompt}],
-                    temperature=temperature
+                    temperature=0.3 if tone == "Serious Formal Complaint" else 0.7
                 )
                 generated_letter = response.choices[0].message.content
                 st.text_area("Generated Letter", generated_letter, height=300)
             except Exception as e:
                 st.error(f"OpenAI error: {e}")
 
-
-
-
-
-
- 
 
      
  
