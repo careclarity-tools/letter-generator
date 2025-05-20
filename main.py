@@ -43,13 +43,14 @@ tone = st.radio(
 # --- LETTER STRUCTURE ---
 
 letter_structure = {
-    "Care Complaint Letter": {
         "Neglect or injury": [
-            "Who was harmed?",
-            "Where did it happen?",
-            "What happened?",
-            "What was the result?",
-            "Have you raised this already?"
+            "Who was affected or harmed in this situation?",
+            "Where did this take place — if you're comfortable sharing?",
+            "Can you describe what happened, in your own words?",
+            "What was the result or impact of what occurred?",
+            "Have you spoken to anyone about this or raised it already?"
+        ],
+
         ],
         "Medication errors": [
             "What was the error?",
