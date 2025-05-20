@@ -57,7 +57,12 @@ category_map = {
     "Behavioural Concerns": ["Aggression", "Verbal Abuse", "Inappropriate Behaviour"],
     "Mental Capacity": ["Capacity Dispute", "Best Interests Decision", "IMCA Involvement"],
     "Staffing and Training": ["Understaffing", "Untrained Staff", "Staff Turnover"],
-    "Environment & Safety": ["Trip Hazard", "Unsafe Room", "Infection Control"]
+    "Environment & Safety": ["Trip Hazard", "Unsafe Room", "Infection Control"],
+    "Care Access": ["Denied Visits", "Inflexible Visiting Hours", "Remote Communication Issues"],
+    "Diet & Nutrition": ["Missed Meals", "Unmonitored Intake", "Inappropriate Diet"],
+    "Personal Care": ["Bathing Neglect", "Toileting Needs Ignored", "Bedsores/Wounds"],
+    "Care Planning": ["Outdated Plans", "Lack of Family Input", "Missing Signatures"],
+    "Finance & Fees": ["Unexpected Bills", "Lack of Cost Transparency", "Direct Payments Confusion"]
 }
 
 st.markdown("## 📂 Letter Type")
@@ -81,7 +86,7 @@ You are a UK care consultant writing a {tone.lower()} letter for a family member
 - Subcategory: {subcategory}
 
 The issue described is:
-"""{details}"""
+{details}
 
 The letter must:
 - Be emotionally intelligent and professional
