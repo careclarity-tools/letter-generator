@@ -304,32 +304,32 @@ def generate_prompt(category, subcategory, answers, user_name, tone):
     closing = f"Please end the letter with:\nSincerely,\n{user_name}"
     return f"{base_intro}{preamble}\n\n{context_block}{summary_block}{action_block}{closing}"
 
-# --- FORM UI ---
-selected_category = st.selectbox("Choose your letter category:", list(letter_structure.keys()))
+# --- FORM UI (upgraded) ---
+selected_category = st.selectbox("📂 Choose your letter category:", list(letter_structure.keys()))
 
 if selected_category:
     subcategories = list(letter_structure[selected_category].keys())
-    selected_subcategory = st.selectbox(f"Select the issue type under '{selected_category}':", subcategories)
+    selected_subcategory = st.selectbox(f"🔎 Select the issue type under '{selected_category}':", subcategories)
 
     if selected_subcategory:
-        st.markdown("---")
-        st.subheader("📝 Please answer the following:")
-        user_answers = {}
-        for question in letter_structure[selected_category][selected_subcategory]:
-            response = st.text_area(question, key=question)
-            user_answers[question] = response
+        with st.form("letter_form"):
+            with st.expander("📝 Please answer the following questions"):
+                user_answers = {}
+                for question in letter_structure[selected_category][selected_subcategory]:
+                    user_answers[question] = st.text_area(question, key=question)
 
-        user_name = st.text_input("Your Name")
+            user_name = st.text_input("✏️ Your Name")
+            submitted = st.form_submit_button("Generate Letter")
 
-        if st.button("Generate Letter"):
-            prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name, tone)
-            try:
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7
-                )
-                letter = response.choices[0].message.content
-                st.text_area("Generated Letter", letter, height=350)
-            except Exception as e:
-                st.error(f"OpenAI error: {e}")                                    
+            if submitted:
+                prompt = generate_prompt(selected_category, selected_subcategory, user_answers, user_name, tone)
+                try:
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.7
+                    )
+                    letter = response.choices[0].message.content
+                    st.text_area("📄 Generated Letter", letter, height=350)
+                except Exception as e:
+                    st.error(f"OpenAI error: {e}")
