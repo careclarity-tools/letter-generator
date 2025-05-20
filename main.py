@@ -1,4 +1,3 @@
-
 import streamlit as st
 import json
 from openai import OpenAI
@@ -48,6 +47,7 @@ tone = st.radio(
 st.divider()
 
 # --- LETTER STRUCTURE ---
+
 letter_structure = {
     "Care Complaint Letter": {
         "Neglect or injury": [
@@ -255,6 +255,8 @@ letter_structure = {
         ]
     }
 }
+
+}
             "Where did it happen?",
             "What happened?",
             "What was the result?",
@@ -340,7 +342,3 @@ if selected_category:
                     st.text_area("📄 Generated Letter", letter, height=350)
                 except Exception as e:
                     st.error(f"OpenAI error: {e}")
-        
-
-   
-     
