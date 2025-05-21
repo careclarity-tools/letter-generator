@@ -281,41 +281,67 @@ def generate_prompt(category, subcategory, answers, user_name, tone):
     base_intro = (
         "You are an experienced care quality advocate who understands CQC regulations, safeguarding protocol, "
         "mental capacity considerations, and the rights of service users. Your task is to generate a formal letter "
-        "that addresses a care-related concern raised by a family member, advocate, or staff whistleblower.\n\n"
+        "that addresses a care-related concern raised by a family member, advocate, or staff whistleblower.
+
+"
     )
 
-    context_block = f"Letter Category: {category}\nIssue Type: {subcategory}\n\n"
+    context_block = f"Letter Category: {category}
+Issue Type: {subcategory}
+
+"
 
     summary_block = ""
     for q, a in answers.items():
         if a.strip():
-            summary_block += f"{q}\n{a.strip()}\n\n"
+            summary_block += f"{q}
+{a.strip()}
+
+"
 
     temperature = 0.3 if tone == "Serious Formal Complaint" else 0.7
 
     if tone == "Serious Formal Complaint":
         action_block = (
-            "Please write this letter in a direct, formal, and legally aware tone. The letter should:\n"
-            "- Be factual and to the point, avoiding unnecessary elaboration.\n"
+            "Please write this letter in a direct, formal, and legally aware tone. The letter should:
+"
+            "- Be factual and to the point, avoiding unnecessary elaboration.
+"
             "- Still reflect concern for the well-being of the individual or team involved, "
-            "without sounding dismissive or cold.\n"
-            "- Explicitly state concern for duty of care or CQC standards.\n"
-            "- Use language that is respectful yet assertive, with clear expectations for response.\n"
-            "- Reference relevant regulations or safeguarding principles where appropriate.\n"
-            "- Mention escalation options such as safeguarding boards or CQC, but in a professional manner.\n\n"
+            "without sounding dismissive or cold.
+"
+            "- Explicitly state concern for duty of care or CQC standards.
+"
+            "- Use language that is respectful yet assertive, with clear expectations for response.
+"
+            "- Reference relevant regulations or safeguarding principles where appropriate.
+"
+            "- Mention escalation options such as safeguarding boards or CQC, but in a professional manner.
+
+"
         )
     else:
         action_block = (
-            "Please write this letter in a calm, assertive, and emotionally intelligent tone. The letter should:\n"
-            "- Clearly explain the concern or incident\n"
-            "- Highlight any risk to the individual or others\n"
-            "- Request investigation, documentation, and appropriate escalation\n"
-            "- Mention any reports already made to safeguarding teams or regulators if noted\n"
-            "- Specify that a written response and named accountability are expected within a reasonable timeframe\n"
-            "- Close with a readiness to escalate if the matter is not taken seriously\n\n"
+            "Please write this letter in a calm, assertive, and emotionally intelligent tone. The letter should:
+"
+            "- Clearly explain the concern or incident
+"
+            "- Highlight any risk to the individual or others
+"
+            "- Request investigation, documentation, and appropriate escalation
+"
+            "- Mention any reports already made to safeguarding teams or regulators if noted
+"
+            "- Specify that a written response and named accountability are expected within a reasonable timeframe
+"
+            "- Close with a readiness to escalate if the matter is not taken seriously
+
+"
         )
 
-    closing = f"Please end the letter with:\nSincerely,\n{user_name}"
+    closing = f"Please end the letter with:
+Sincerely,
+{user_name}"
 
     return base_intro + context_block + summary_block + action_block + closing
 
